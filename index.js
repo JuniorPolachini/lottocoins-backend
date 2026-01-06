@@ -3,6 +3,7 @@ import { pool } from "./db.js";
 import fs from "fs";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const app = express();
 app.use(express.json());
@@ -92,6 +93,39 @@ app.get("/users", async (req, res) => {
   try {
     const result = await pool.query("SELECT id, full_name, email FROM users");
     res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const result = await pool.query(
+      "SELECT id, email, password_hash FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: "Usuário ou senha inválidos" });
+    }
+
+    const user = result.rows[0];
+
+    const match = await bcrypt.compare(password, user.password_hash);
+
+    if (!match) {
+      return res.status(400).json({ error: "Usuário ou senha inválidos" });
+    }
+
+    const token = jwt.sign(
+      { user_id: user.id },
+      process.env.JWT_SECRET || "devsecret",
+      { expiresIn: "7d" }
+    );
+
+    res.json({ ok: true, token });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
