@@ -21,3 +21,14 @@ app.get("/db-test", async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+import fs from "fs";
+import { pool } from "./db.js";
+
+async function runMigrations() {
+  const sql = fs.readFileSync("./migrations.sql").toString();
+  await pool.query(sql);
+  console.log("Migrations executed");
+}
+
+runMigrations();
