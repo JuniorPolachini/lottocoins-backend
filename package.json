@@ -7,8 +7,9 @@
   },
   "dependencies": {
     "express": "latest",
-      "pg": "latest"
+    "pg": "latest"
+    "bcryptjs": "latest"
   }
 }
 
-"bcryptjs": "latest"
+
