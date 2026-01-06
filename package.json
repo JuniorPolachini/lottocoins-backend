@@ -5,9 +5,10 @@
   "scripts": {
     "start": "node index.js"
   },
-  "dependencies": {
-    "express": "latest",
-    "pg": "latest",
-    "bcryptjs": "latest"
-  }
+"dependencies": {
+  "express": "latest",
+  "pg": "latest",
+  "bcryptjs": "latest",
+  "jsonwebtoken": "latest"
+}
 }
