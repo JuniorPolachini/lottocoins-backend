@@ -86,3 +86,13 @@ app.post("/register", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+
+app.get("/users", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT id, full_name, email FROM users");
+    res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
