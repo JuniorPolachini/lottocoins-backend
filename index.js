@@ -1,4 +1,6 @@
 import express from "express";
+import { pool } from "./db.js";
+import fs from "fs";
 
 const app = express();
 
@@ -12,7 +14,6 @@ app.get("/", (req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log("API running on port", port));
 
-import { pool } from "./db.js";
 app.get("/db-test", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
@@ -21,9 +22,6 @@ app.get("/db-test", async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
-
-import fs from "fs";
-import { pool } from "./db.js";
 
 async function runMigrations() {
   const sql = fs.readFileSync("./migrations.sql").toString();
