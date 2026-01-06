@@ -1,8 +1,11 @@
 import express from "express";
 import { pool } from "./db.js";
 import fs from "fs";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 const app = express();
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({
@@ -30,3 +33,56 @@ async function runMigrations() {
 }
 
 runMigrations();
+
+
+app.post("/register", async (req, res) => {
+  try {
+    const {
+      full_name,
+      cpf,
+      birth_date,
+      email,
+      password,
+      whatsapp,
+      tibia_character,
+      accepted_terms
+    } = req.body;
+
+    if (!accepted_terms) {
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
+    }
+
+    const exists = await pool.query(
+      "SELECT id FROM users WHERE email = $1 OR cpf = $2",
+      [email, cpf]
+    );
+
+    if (exists.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "E-mail ou CPF já cadastrados." });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      `INSERT INTO users
+      (full_name, cpf, birth_date, email, password_hash, whatsapp, tibia_character, accepted_terms)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [
+        full_name,
+        cpf,
+        birth_date,
+        email,
+        password_hash,
+        whatsapp,
+        tibia_character,
+        accepted_terms
+      ]
+    );
+
+    res.json({ ok: true, message: "Cadastro realizado com sucesso!" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
