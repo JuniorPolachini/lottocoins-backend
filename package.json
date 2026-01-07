@@ -1,14 +1,13 @@
 {
-  "name": "lottocoins-api",
-  "version": "1.0.0",
+  "name": "lotto-api",
   "type": "module",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "latest",
+    "pg": "latest",
+    "cors": "latest"
+  },
   "scripts": {
     "start": "node index.js"
-  },
-"dependencies": {
-  "express": "latest",
-  "pg": "latest",
-  "bcryptjs": "latest",
-  "jsonwebtoken": "latest"
-}
+  }
 }
