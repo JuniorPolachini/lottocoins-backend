@@ -120,8 +120,6 @@ app.listen(port, () => console.log("API running on port", port));
 
 
 
-import { pool } from "./db.js";
-
 app.get("/db-test", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
