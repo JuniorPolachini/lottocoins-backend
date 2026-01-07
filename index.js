@@ -117,3 +117,16 @@ app.post("/bet", async (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log("API running on port", port));
+
+
+
+import { pool } from "./db.js";
+
+app.get("/db-test", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json({ ok: true, db_time: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
