@@ -17,3 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   accepted_terms BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+ALTER TABLE users
+ADD COLUMN balance NUMERIC(12,2) DEFAULT 0 NOT NULL;
+
