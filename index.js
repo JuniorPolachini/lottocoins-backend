@@ -79,25 +79,48 @@ app.post("/add-balance", async (req, res) => {
 
 // ---------------- FAZER APOSTA ----------------
 app.post("/bet", async (req, res) => {
-  try {
-    const { user_id, numbers, contest, cost, repeats } = req.body;
+  const { user_id, numbers, contest, cost, repeats } = req.body;
 
-    await pool.query(
-      `INSERT INTO bets (user_id, numbers, contest, cost, repeats)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [user_id, numbers, contest, cost, repeats]
+  try {
+    const userResult = await pool.query(
+      "SELECT balance FROM users WHERE id = $1",
+      [user_id]
     );
 
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const balance = Number(userResult.rows[0].balance);
+    const totalCost = Number(cost) * (repeats || 1);
+
+    if (balance < totalCost) {
+      return res.status(400).json({ error: "Insufficient balance" });
+    }
+
+    // salva aposta primeiro
+    await pool.query(
+      "INSERT INTO bets (user_id, numbers, contest, cost, repeats) VALUES ($1,$2,$3,$4,$5)",
+      [user_id, numbers, contest, cost, repeats || 1]
+    );
+
+    // só desconta após salvar aposta
     await pool.query(
       "UPDATE users SET balance = balance - $1 WHERE id = $2",
-      [cost, user_id]
+      [totalCost, user_id]
     );
 
-    res.json({ ok: true });
+    res.json({
+      ok: true,
+      message: "Bet registered successfully"
+    });
+
   } catch (e) {
+    console.error("BET ERROR:", e);
     res.status(500).json({ error: e.message });
   }
 });
+
 
 // ---------------- MIGRATIONS ----------------
 async function runMigrations() {
