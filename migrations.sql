@@ -30,13 +30,14 @@ CREATE TABLE IF NOT EXISTS users (
 -- ============================
 
 CREATE TABLE IF NOT EXISTS bets (
-  id SERIAL PRIMARY KEY,
-  user_id INT NOT NULL,
-  numbers TEXT NOT NULL,
-  contest INT NOT NULL,
-  cost NUMERIC(12,2) NOT NULL,
-  repeats INT DEFAULT 1,
-  created_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    numbers TEXT NOT NULL,
+    contest INTEGER NOT NULL,
+    cost NUMERIC(12,2) NOT NULL,
+    repeats INTEGER NOT NULL,
+    paid BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Garantir que colunas existam mesmo em tabelas antigas
