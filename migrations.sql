@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- =========================
 -- BETS TABLE
 -- =========================
-CREATE TABLE IF NOT EXISTS bets (
+CREATE TABLE IF NOT EXISTS bet (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
     numbers TEXT NOT NULL,
