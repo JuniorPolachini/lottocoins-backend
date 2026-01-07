@@ -28,21 +28,19 @@ CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     amount NUMERIC(12,2) NOT NULL,
-    type TEXT NOT NULL,         -- deposit | bet | prize | refund | adjust
-    source TEXT,                -- tibia | admin | bet_id | import | etc
+    type TEXT NOT NULL,
+    source TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
-
-    CONSTRAINT fk_user
-        FOREIGN KEY(user_id)
-        REFERENCES users(id)
+    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
 -- 🔹 Apostas
 CREATE TABLE IF NOT EXISTS bets (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL REFERENCES users(id),
-  numbers TEXT NOT NULL,         -- ex: "01,03,07,10"
-  contest INT NOT NULL,          -- número do concurso
-  paid NUMERIC(12,2) NOT NULL,   -- custo pago
+  numbers TEXT NOT NULL,
+  contest INT NOT NULL,
+  paid NUMERIC(12,2) NOT NULL,
+  repeats INT DEFAULT 1,
   created_at TIMESTAMP DEFAULT NOW()
 );
