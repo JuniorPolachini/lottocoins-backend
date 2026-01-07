@@ -133,3 +133,50 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+
+// importar tcs
+app.post("/import-tibiacoins", async (req, res) => {
+  try {
+    const { entries } = req.body; // lista de linhas já parseadas
+
+    let credited = 0;
+    let pending = 0;
+
+    for (const entry of entries) {
+      const { sender, amount } = entry;
+
+      if (amount <= 0) continue;
+
+      const user = await pool.query(
+        "SELECT id FROM users WHERE tibia_character = $1",
+        [sender]
+      );
+
+      if (user.rows.length === 0) {
+        pending++;
+        continue;
+      }
+
+      const userId = user.rows[0].id;
+
+      await pool.query(
+        "UPDATE users SET balance = balance + $1 WHERE id = $2",
+        [amount, userId]
+      );
+
+      await pool.query(
+        `INSERT INTO transactions (user_id, amount, type, description)
+         VALUES ($1,$2,'deposit','Tibia Coins deposit')`,
+        [userId, amount]
+      );
+
+      credited++;
+    }
+
+    res.json({ ok: true, credited, pending });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+// fim importar tcs
