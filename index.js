@@ -19,15 +19,6 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", app: "Lotto Coins API" });
 });
 
-app.get("/db-test", async (req, res) => {
-  try {
-    const r = await pool.query("SELECT NOW()");
-    res.json({ ok: true, db_time: r.rows[0] });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 app.get("/users", async (req, res) => {
   const r = await pool.query(
     "SELECT id, full_name, email, balance FROM users ORDER BY id ASC"
@@ -35,7 +26,7 @@ app.get("/users", async (req, res) => {
   res.json(r.rows);
 });
 
-// ------------------ REGISTER ------------------
+// ---------------- REGISTER ----------------
 app.post("/register", async (req, res) => {
   try {
     const {
@@ -62,29 +53,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// ------------------ LOGIN ------------------
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password_hash } = req.body;
-
-    const r = await pool.query(
-      `SELECT id, full_name, balance
-       FROM users
-       WHERE email=$1 AND password_hash=$2
-       LIMIT 1`,
-      [email, password_hash]
-    );
-
-    if (!r.rowCount)
-      return res.status(401).json({ error: "Credenciais inválidas" });
-
-    res.json(r.rows[0]);
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
-});
-
-// ------------------ IMPORT CREDITS ------------------
+// -------------- IMPORT CREDITS ---------------
 app.post("/import-tibiacoins", async (req, res) => {
   try {
     const { entries } = req.body;
@@ -119,10 +88,10 @@ app.post("/import-tibiacoins", async (req, res) => {
   }
 });
 
-// ------------------ BET ------------------
+// -------------- BET WITH TEIMOSINHA ---------------
 app.post("/bet", async (req, res) => {
   try {
-    const { user_id, numbers, contest, cost } = req.body;
+    const { user_id, numbers, contest, cost, repeats } = req.body;
 
     const user = await pool.query(
       "SELECT balance FROM users WHERE id=$1",
@@ -132,25 +101,29 @@ app.post("/bet", async (req, res) => {
     if (!user.rowCount)
       return res.status(404).json({ error: "Usuário não encontrado" });
 
-    if (user.rows[0].balance < cost)
+    const totalCost = cost * repeats;
+
+    if (user.rows[0].balance < totalCost)
       return res.status(400).json({ error: "Saldo insuficiente" });
 
     await pool.query(
       "UPDATE users SET balance = balance - $1 WHERE id=$2",
-      [cost, user_id]
+      [totalCost, user_id]
     );
 
     await pool.query(
       `INSERT INTO transactions (user_id, amount, type, source)
-       VALUES ($1,$2,'bet','lotto')`,
-      [user_id, -cost]
+       VALUES ($1,$2,'bet','lotto-teimosinha')`,
+      [user_id, -totalCost]
     );
 
-    await pool.query(
-      `INSERT INTO bets (user_id, numbers, contest, paid)
-       VALUES ($1,$2,$3,$4)`,
-      [user_id, numbers, contest, cost]
-    );
+    for (let i = 0; i < repeats; i++) {
+      await pool.query(
+        `INSERT INTO bets (user_id, numbers, contest, paid, repeats)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [user_id, numbers, contest + i, cost, repeats]
+      );
+    }
 
     res.json({ ok: true });
   } catch (e) {
