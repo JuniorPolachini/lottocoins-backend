@@ -21,5 +21,14 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS transactions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  amount NUMERIC(12,2) NOT NULL,
+  type VARCHAR(20) NOT NULL, -- deposit, bet, prize
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
 
 
