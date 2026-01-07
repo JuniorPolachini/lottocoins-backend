@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { pool } from "./db.js";
 import fs from "fs";
+import bcrypt from "bcrypt";
+
 
 const app = express();
 app.use(express.json());
