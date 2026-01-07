@@ -21,21 +21,31 @@ app.get("/", (req, res) => {
 });
 
 /* REGISTER */
-app.post("/register", async (req, res) => {
+app.post('/register', async (req, res) => {
   try {
-    const { full_name, email, password } = req.body;
+    const { full_name, email, password, cpf } = req.body;
 
-    const hash = password; // (você pode trocar depois por bcrypt)
+    if (!full_name || !email || !password || !cpf) {
+      return res.status(400).json({ error: "Campos obrigatórios ausentes" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      `INSERT INTO users(full_name,email,password_hash)
-       VALUES ($1,$2,$3) RETURNING id`,
-      [full_name, email, hash]
+      `INSERT INTO users (full_name, email, password, cpf, balance)
+       VALUES ($1, $2, $3, $4, 0)
+       RETURNING id, full_name, email, cpf, balance`,
+      [full_name, email, hashed, cpf]
     );
 
-    res.json({ ok: true, user_id: result.rows[0].id });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(201).json({
+      message: "Usuário criado com sucesso",
+      user: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
