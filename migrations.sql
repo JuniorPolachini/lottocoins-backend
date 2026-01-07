@@ -1,6 +1,4 @@
--- =========================
--- USERS TABLE
--- =========================
+-- USERS
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     full_name TEXT NOT NULL,
@@ -22,9 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- =========================
--- BETS TABLE
--- =========================
+-- BETS
 CREATE TABLE IF NOT EXISTS bets (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
@@ -36,13 +32,11 @@ CREATE TABLE IF NOT EXISTS bets (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- =========================
--- TRANSACTIONS TABLE
--- =========================
+-- TRANSACTIONS
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
-    type TEXT NOT NULL,
+    description TEXT NOT NULL,
     amount NUMERIC(12,2) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
