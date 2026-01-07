@@ -1,49 +1,52 @@
--- 🔹 Coluna de saldo
+-- ADICIONA COLUNA DE SALDO (CASO AINDA NÃO EXISTA)
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) DEFAULT 0 NOT NULL;
 
--- 🔹 Tabela de usuários
+-----------------------------------------------------
+-- TABELA DE USUÁRIOS (GARANTIR QUE EXISTE)
+-----------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    full_name TEXT NOT NULL,
-    cpf VARCHAR(14) NOT NULL UNIQUE,
-    birth_date DATE NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    whatsapp TEXT NOT NULL,
-    tibia_character TEXT NOT NULL,
-    cep VARCHAR(12),
-    street TEXT,
-    number TEXT,
-    neighborhood TEXT,
-    city TEXT,
-    state TEXT,
-    country TEXT,
-    accepted_terms BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  cpf VARCHAR(14) NOT NULL UNIQUE,
+  birth_date DATE NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  whatsapp TEXT NOT NULL,
+  tibia_character TEXT NOT NULL,
+  cep VARCHAR(12),
+  street TEXT,
+  number TEXT,
+  neighborhood TEXT,
+  city TEXT,
+  state TEXT,
+  country TEXT,
+  accepted_terms BOOLEAN DEFAULT false,
+  balance NUMERIC(12,2) DEFAULT 0 NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 🔹 Transações
+-----------------------------------------------------
+-- TABELA DE TRANSAÇÕES (CRÉDITOS / DÉBITOS)
+-----------------------------------------------------
 CREATE TABLE IF NOT EXISTS transactions (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id),
   amount NUMERIC(12,2) NOT NULL,
-  type TEXT NOT NULL,
-  source TEXT,
+  type TEXT NOT NULL,          -- credit | debit
+  source TEXT,                 -- ex: import, bet, admin
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-
--- 🔹 Apostas
+-----------------------------------------------------
+-- TABELA DE APOSTAS
+-----------------------------------------------------
 CREATE TABLE IF NOT EXISTS bets (
   id SERIAL PRIMARY KEY,
-  user_id INT NOT NULL REFERENCES users(id),
+  user_id INTEGER REFERENCES users(id),
   numbers TEXT NOT NULL,
-  contest INT NOT NULL,
-  paid NUMERIC(12,2) NOT NULL,
+  contest INTEGER NOT NULL,
+  cost NUMERIC(12,2) NOT NULL,
+  repeats INTEGER DEFAULT 1,
   created_at TIMESTAMP DEFAULT NOW()
 );
-
--- 🔹 GARANTE coluna repeats mesmo se tabela já existir
-ALTER TABLE bets
-ADD COLUMN IF NOT EXISTS repeats INT DEFAULT 1;
