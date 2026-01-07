@@ -1,4 +1,4 @@
--- 🔹 Coluna de saldo no usuário
+-- 🔹 Coluna de saldo
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) DEFAULT 0 NOT NULL;
 
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 🔹 Transações (extrato)
+-- 🔹 Transações
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS bets (
   numbers TEXT NOT NULL,
   contest INT NOT NULL,
   paid NUMERIC(12,2) NOT NULL,
-  repeats INT DEFAULT 1,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- 🔹 GARANTE coluna repeats mesmo se tabela já existir
+ALTER TABLE bets
+ADD COLUMN IF NOT EXISTS repeats INT DEFAULT 1;
