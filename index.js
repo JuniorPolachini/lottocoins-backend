@@ -33,7 +33,7 @@ async function runMigrations() {
   console.log("Migrations executed");
 }
 
-//runMigrations();
+runMigrations();
 
 
 app.post("/register", async (req, res) => {
