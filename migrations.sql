@@ -25,14 +25,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- 🔹 Transações
 CREATE TABLE IF NOT EXISTS transactions (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    amount NUMERIC(12,2) NOT NULL,
-    type TEXT NOT NULL,
-    source TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  amount NUMERIC(12,2) NOT NULL,
+  type TEXT NOT NULL,
+  source TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
 );
+
 
 -- 🔹 Apostas
 CREATE TABLE IF NOT EXISTS bets (
