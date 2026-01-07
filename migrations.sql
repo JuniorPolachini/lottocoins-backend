@@ -1,6 +1,14 @@
 -- ADICIONA COLUNA DE SALDO (CASO AINDA NÃO EXISTA)
-ALTER TABLE users
-ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) DEFAULT 0 NOT NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='users' AND column_name='balance'
+    ) THEN
+        ALTER TABLE users
+        ADD COLUMN balance NUMERIC(12,2) DEFAULT 0 NOT NULL;
+    END IF;
+END $$;
 
 -----------------------------------------------------
 -- TABELA DE USUÁRIOS (GARANTIR QUE EXISTE)
