@@ -88,15 +88,18 @@ app.post("/register", async (req, res) => {
   }
 });
 
-
+//users
 app.get("/users", async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, full_name, email FROM users");
+    const result = await pool.query(
+      "SELECT id, full_name, email, balance FROM users"
+    );
     res.json(result.rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
+//fim users
 
 app.post("/login", async (req, res) => {
   try {
