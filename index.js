@@ -1,67 +1,98 @@
 import express from "express";
-import { pool } from "./db.js";
-import fs from "fs";
+import cors from "cors";
+import bcrypt from "bcrypt";
+import pkg from "pg";
+
+const { Pool } = pkg;
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-// ---------------- HOME ----------------
-app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "Lotto Coins API – Beta online 💎",
-  });
+// ---------------- DB ----------------
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
-// ---------------- TESTE DB ----------------
-app.get("/db-test", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    res.json({ ok: true, db_time: result.rows[0] });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-// ---------------- LISTAR USERS ----------------
-app.get("/users", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT id, full_name, email, balance FROM users ORDER BY id ASC"
+// ---------------- MIGRATIONS ----------------
+async function runMigrations() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      balance NUMERIC(12,2) DEFAULT 0 NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
     );
-    res.json(result.rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+
+    CREATE TABLE IF NOT EXISTS bets (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      numbers TEXT NOT NULL,
+      contest INTEGER NOT NULL,
+      repeats INTEGER NOT NULL,
+      cost NUMERIC(12,2) NOT NULL,
+      paid BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS transactions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      description TEXT,
+      amount NUMERIC(12,2) NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  console.log("Migrations executed");
+}
+
+// ---------------- ROUTES ----------------
+
+// Health
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "Lotto Coins API – Beta online 💎" });
 });
 
-// ---------------- IMPORTAR TIBIA COINS ----------------
-app.post("/import-tibiacoins", async (req, res) => {
+// LIST USERS
+app.get("/users", async (req, res) => {
+  const result = await pool.query(
+    "SELECT id, full_name, email, balance FROM users ORDER BY id"
+  );
+  res.json(result.rows);
+});
+
+// REGISTER
+app.post("/register", async (req, res) => {
   try {
-    const { entries } = req.body;
+    const { full_name, email, password } = req.body;
 
-    for (const e of entries) {
-      // encontra usuário pelo nickname
-      const user = await pool.query(
-        "SELECT id FROM users WHERE tibia_character = $1",
-        [e.sender]
-      );
+    if (!full_name || !email || !password)
+      return res.status(400).json({ error: "Campos obrigatórios ausentes" });
 
-      if (user.rows.length === 0) continue;
+    const password_hash = await bcrypt.hash(password, 10);
 
-      await pool.query(
-        "UPDATE users SET balance = balance + $1 WHERE id = $2",
-        [e.amount, user.rows[0].id]
-      );
-    }
+    const result = await pool.query(
+      `INSERT INTO users (full_name, email, password_hash, balance)
+       VALUES ($1,$2,$3,0)
+       RETURNING id, full_name, email, balance`,
+      [full_name, email, password_hash]
+    );
 
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.json({
+      message: "Usuário criado com sucesso",
+      user: result.rows[0]
+    });
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ error: "Erro ao registrar usuário" });
   }
 });
 
-// ---------------- ADICIONAR SALDO MANUAL ----------------
+// ADD BALANCE
 app.post("/add-balance", async (req, res) => {
   try {
     const { user_id, amount } = req.body;
@@ -71,67 +102,80 @@ app.post("/add-balance", async (req, res) => {
       [amount, user_id]
     );
 
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    await pool.query(
+      "INSERT INTO transactions (user_id, description, amount) VALUES ($1,$2,$3)",
+      [user_id, "Saldo adicionado", amount]
+    );
+
+    res.json({ message: "Saldo adicionado com sucesso" });
+  } catch (err) {
+    console.error("ADD BALANCE ERROR:", err);
+    res.status(500).json({ error: "Erro" });
   }
 });
 
-// ---------------- FAZER APOSTA ----------------
-app.post("/bet", async (req, res) => {
-  const { user_id, numbers, contest, cost, repeats } = req.body;
-
+// IMPORT TIBIACOINS
+app.post("/import-tibiacoins", async (req, res) => {
   try {
-    const userResult = await pool.query(
+    const { entries } = req.body;
+
+    for (const e of entries) {
+      await pool.query(
+        "INSERT INTO transactions (user_id, description, amount) VALUES (1,$1,$2)",
+        [e.sender, e.amount]
+      );
+
+      await pool.query(
+        "UPDATE users SET balance = balance + $1 WHERE id = 1",
+        [e.amount]
+      );
+    }
+
+    res.json({ message: "Importação concluída" });
+  } catch (err) {
+    console.error("IMPORT ERROR:", err);
+    res.status(500).json({ error: "Erro ao importar" });
+  }
+});
+
+// BET
+app.post("/bet", async (req, res) => {
+  try {
+    const { user_id, numbers, contest, cost, repeats } = req.body;
+
+    const user = await pool.query(
       "SELECT balance FROM users WHERE id = $1",
       [user_id]
     );
 
-    if (userResult.rowCount === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user.rows.length)
+      return res.status(404).json({ error: "Usuário não encontrado" });
 
-    const balance = Number(userResult.rows[0].balance);
-    const totalCost = Number(cost) * (repeats || 1);
+    if (user.rows[0].balance < cost)
+      return res.status(400).json({ error: "Saldo insuficiente" });
 
-    if (balance < totalCost) {
-      return res.status(400).json({ error: "Insufficient balance" });
-    }
-
-    // salva aposta primeiro
     await pool.query(
-      "INSERT INTO bets (user_id, numbers, contest, cost, repeats) VALUES ($1,$2,$3,$4,$5)",
-      [user_id, numbers, contest, cost, repeats || 1]
+      `INSERT INTO bets (user_id,numbers,contest,repeats,cost,paid)
+       VALUES ($1,$2,$3,$4,$5,false)`,
+      [user_id, numbers, contest, repeats, cost]
     );
 
-    // só desconta após salvar aposta
     await pool.query(
       "UPDATE users SET balance = balance - $1 WHERE id = $2",
-      [totalCost, user_id]
+      [cost, user_id]
     );
 
-    res.json({
-      ok: true,
-      message: "Bet registered successfully"
-    });
-
-  } catch (e) {
-    console.error("BET ERROR:", e);
-    res.status(500).json({ error: e.message });
+    res.json({ message: "Aposta registrada com sucesso" });
+  } catch (err) {
+    console.error("BET ERROR:", err);
+    res.status(500).json({ error: "Erro ao registrar aposta" });
   }
 });
 
+// ---------------- START ----------------
+const PORT = process.env.PORT || 8080;
 
-// ---------------- MIGRATIONS ----------------
-async function runMigrations() {
-  const sql = fs.readFileSync("./migrations.sql").toString();
-  await pool.query(sql);
-  console.log("Migrations executed");
-}
-
-const port = process.env.PORT || 8080;
-
-app.listen(port, async () => {
-  console.log(`API running on port ${port}`);
+app.listen(PORT, async () => {
+  console.log(`API running on port ${PORT}`);
   await runMigrations();
 });
