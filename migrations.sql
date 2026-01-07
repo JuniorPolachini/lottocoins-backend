@@ -25,11 +25,11 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- TABLE BETS
 CREATE TABLE IF NOT EXISTS bets (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    numbers TEXT NOT NULL,
-    contest INTEGER NOT NULL,
-    cost NUMERIC(12,2) NOT NULL,
-    repeats INTEGER DEFAULT 1,
-    created_at TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  numbers TEXT NOT NULL,
+  contest INT NOT NULL,
+  cost NUMERIC(12,2) NOT NULL,
+  repeats INT DEFAULT 1,
+  created_at TIMESTAMP DEFAULT NOW()
 );
