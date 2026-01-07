@@ -69,3 +69,37 @@ app.post("/bet", async (req, res) => {
     client.release();
   }
 });
+
+// ------------------ ADD BALANCE ------------------
+app.post("/add-balance", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { user_id, amount } = req.body;
+
+    if (amount <= 0) throw new Error("Valor inválido");
+
+    await client.query("BEGIN");
+
+    await client.query(
+      "UPDATE users SET balance = balance + $1 WHERE id=$2",
+      [amount, user_id]
+    );
+
+    await client.query(
+      `INSERT INTO transactions (user_id, amount, type, source)
+       VALUES ($1,$2,'credit','admin')`,
+      [user_id, amount]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({ ok: true, message: "Saldo adicionado com sucesso" });
+
+  } catch (e) {
+    await client.query("ROLLBACK");
+    res.status(400).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
