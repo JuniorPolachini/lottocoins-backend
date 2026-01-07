@@ -1,29 +1,34 @@
--- ADD BALANCE (se ainda não existir)
+-- ============================
+-- USERS
+-- ============================
+
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) DEFAULT 0 NOT NULL;
 
--- CREATE USERS
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    full_name TEXT NOT NULL,
-    cpf VARCHAR(14) NOT NULL UNIQUE,
-    birth_date DATE NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    whatsapp TEXT NOT NULL,
-    tibia_character TEXT NOT NULL,
-    cep VARCHAR(12),
-    street TEXT,
-    number TEXT,
-    neighborhood TEXT,
-    city TEXT,
-    state TEXT,
-    country TEXT,
-    accepted_terms BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  cpf VARCHAR(14) NOT NULL UNIQUE,
+  birth_date DATE NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  whatsapp TEXT NOT NULL,
+  tibia_character TEXT NOT NULL,
+  cep VARCHAR(12),
+  street TEXT,
+  number TEXT,
+  neighborhood TEXT,
+  city TEXT,
+  state TEXT,
+  country TEXT,
+  accepted_terms BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
--- TABLE BETS
+-- ============================
+-- BETS
+-- ============================
+
 CREATE TABLE IF NOT EXISTS bets (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
@@ -34,8 +39,23 @@ CREATE TABLE IF NOT EXISTS bets (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Garantir que colunas existam mesmo em tabelas antigas
+
 ALTER TABLE bets 
 ADD COLUMN IF NOT EXISTS cost NUMERIC(12,2);
 
 ALTER TABLE bets 
 ADD COLUMN IF NOT EXISTS repeats INT DEFAULT 1;
+
+
+-- ============================
+-- TRANSACTIONS (IMPORTAÇÃO DE CRÉDITOS)
+-- ============================
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  reference TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
